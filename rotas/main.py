@@ -34,13 +34,3 @@ if __name__ == "__main__":
     # Send mission
     msg = generate_mission(path)
     print(msg)
-
-    # try:
-    #     gps = gps_reader.RobotGPSPlotter(path, voronoi_sites)
-    #     gps.run()
-
-    #     # Quando a execução do rospy for encerrada, plota os dados
-    #     # gps.plot_gps_data()
-
-    # except rospy.ROSInterruptException:
-    #     pass

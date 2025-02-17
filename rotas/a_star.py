@@ -17,19 +17,18 @@ class AStarGraph:
         self.voronoi_sites = self.voronoi_diagram.voronoi_sites
         self.voronoi_sites = self.voronoi_sites.to_numpy()
 
-        # self.start_usuario = self.voronoi_diagram.initial_point # test point
-        # self.goal_usuario = self.voronoi_sites[5] # test point, 10 is an example
-
         self.selected_points = [] # Store the selected points
         self.equipment_lon = self.voronoi_diagram.equipment_lon.to_numpy()
         self.equipment_lat = self.voronoi_diagram.equipment_lat.to_numpy()
 
+        # Initial robot position
+        self.robot_position = self.voronoi_diagram.initial_point
+
+        # Plot equipament coordinates and collect points to the mission
         self.PlotEquipamentCoordinates()
 
         self.start_usuario = self.selected_points[0]
         self.goal_usuario = self.selected_points[1]
-
-        # self.goal_usuario = [-3.1236522876070354,-41.764444401709717]
 
         # Find the closest vertex to the start point and goal point
         self.start = self.FindClosestVertex(self.start_usuario)
@@ -77,7 +76,8 @@ class AStarGraph:
         Plot equipament coordinates and collect points to the mission.
         """
         fig, ax = plt.subplots()
-        ax.scatter(self.equipment_lon, self.equipment_lat, picker=True)
+        ax.scatter(self.equipment_lon, self.equipment_lat, picker=True, label='Equipment')
+        ax.scatter(self.robot_position[1], self.robot_position[0], picker=True, color='red', label='Robot Position')
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
         ax.set_title("Select the initial point and then, equipment to send the mission")
@@ -166,6 +166,8 @@ class AStarGraph:
                     current_node = came_from[current_node]
                 path.append(tuple(self.start))
                 path.reverse()
+
+                # path.insert(0, tuple(self.start_usuario))
 
                 # Add start and goal points to the path
                 # path.insert(0, tuple(self.start_usuario))
