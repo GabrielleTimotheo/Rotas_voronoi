@@ -167,12 +167,6 @@ class AStarGraph:
                 path.append(tuple(self.start))
                 path.reverse()
 
-                # path.insert(0, tuple(self.start_usuario))
-
-                # Add start and goal points to the path
-                # path.insert(0, tuple(self.start_usuario))
-                # path.append(tuple(self.goal_usuario))
-
                 return path, self.voronoi_sites
             
             # Verify neighbors

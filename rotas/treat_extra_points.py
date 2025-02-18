@@ -1,57 +1,96 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def read_selected_points():
-    """
-    Read selected points from a text file.
+class BoundaryPoints:
+    def __init__(self):
+        """
+        Initialize BoundaryPoints.
+        """
+        self.selected_points = self.ReadSelectedPoints()
+        self.new_points, self.centro = self.AddExtraPoints()
+        self.interpolated_points = self.GenerateIntermediatePoints(num=7)
 
-    Args:
-        file_path (str): Path to the text file.
+    def ReadSelectedPoints(self):
+        """
+        Read selected points from a text file.
 
-    Returns:
-        np.ndarray: Array of selected points.
-    """
-    try:
-        points = np.loadtxt("Rotas_voronoi/rotas/selected_points.txt", delimiter=",", dtype=float)
-        points = np.array(points)
-        return points
-    except Exception as e:
-        print(f"Error reading file: {e}")
-        return None
+        Args:
+            file_path (str): Path to the text file.
 
-def AddExtraPoints(points):
-    """
-    Add extra points to the selected points.
+        Returns:
+            np.ndarray: Array of selected points.
+        """
+        try:
+            points = np.loadtxt("selected_points.txt", delimiter=",", dtype=float)
+            points = np.array(points)
+            return points
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return None
 
-    Args:
-        points (np.ndarray): Array of selected points.
+    def AddExtraPoints(self):
+        """
+        Add extra points to the selected points.
 
-    Returns:
-        np.ndarray: Array of selected points with extra points.
-    """
-    # Fator de afastamento
-    k = 0.5  
+        Args:
+            points (np.ndarray): Array of selected points.
 
-    # Calcula o centroide
-    centro = np.mean(points, axis=0)
+        Returns:
+            np.ndarray: Array of selected points with extra points.
+        """
+        # Fator de afastamento
+        k = 0.1  
 
-    # Calcula os novos pontos afastados
-    new_points = []
-    for p in points:
-        direction = p - centro
-        new_point = p + k * direction
-        new_points.append(new_point)
+        # Calcula o centroide
+        centro = np.mean(self.selected_points, axis=0)
 
-    new_points = np.array(new_points)
-    return new_points, centro
+        # Calcula os novos pontos afastados
+        new_points = []
+        for p in self.selected_points:
+            direction = p - centro
+            new_point = p + k * direction
+            new_points.append(new_point)
 
-selected_points = read_selected_points()
-new_points, centro = AddExtraPoints(selected_points)
+        new_points = np.array(new_points)
+        return new_points, centro
 
-# Plotando os pontos antes e depois
-plt.scatter(selected_points[:,0], selected_points[:,1], color='blue', label='Original')
-plt.scatter(new_points[:,0], new_points[:,1], color='red', label='Afastado')
-plt.scatter(centro[0], centro[1], color='black', marker='x', label='Centroide')
-plt.legend()
-plt.grid()
-plt.show()
+    def GenerateIntermediatePoints(self, num=5):
+        """
+        Generate intermediate points between the selected points.
+
+        Args:
+            points (np.ndarray): Array of selected points.
+            num (int): Number of intermediate points to generate.
+        
+        Returns:
+            np.ndarray: Array of intermediate points.
+        """
+        interpolated = []
+        for i in range(len(self.new_points)):
+            p1 = self.new_points[i]
+            p2 = self.new_points[(i + 1) % len(self.new_points)]  # Conecta o último ao primeiro (fechando o ciclo)
+            
+            for t in np.linspace(0, 1, num, endpoint=False)[1:]:  # Ignora t=0 (o próprio ponto p1)
+                interpolated.append((1 - t) * p1 + t * p2)
+        
+        return np.array(interpolated)
+
+    def PlotPoints(self):
+        """
+        Plot selected points and new points.
+
+        Args:
+            selected_points (np.ndarray): Array of selected points.
+            new_points (np.ndarray): Array of new points.
+            centro (np.ndarray): Centroid of the selected points.
+
+        Returns:
+            None
+        """
+        # Plotando os pontos antes e depois
+        plt.scatter(self.selected_points[:,0], self.selected_points[:,1], color='blue', label='Original')
+        plt.scatter(self.interpolated_points[:,0], self.interpolated_points[:,1], color='green', s=10, label='Interpolado')
+        plt.scatter(self.centro[0], self.centro[1], color='black', marker='x', label='Centroide')
+        plt.legend()
+        plt.grid()
+        plt.show()

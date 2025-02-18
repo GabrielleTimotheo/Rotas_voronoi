@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import a_star
 import send_mission
 import numpy as np
-import rospy
-import gps_reader
 
 def generate_mission(path):
     for i in range(2): 

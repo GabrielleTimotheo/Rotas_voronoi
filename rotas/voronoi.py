@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
 import pandas as pd
 from scipy.spatial import ConvexHull
+import treat_extra_points
 
 class VoronoiDiagram:
     def __init__(self, file_path = "models.xlsx"):
@@ -27,21 +28,26 @@ class VoronoiDiagram:
         self.points_to_plot = np.array([self.equipment_lon, self.equipment_lat]).T
         self.points_to_plot = np.concatenate((self.points_to_plot, self.bounding_box_points_to_plot), axis=0)
 
-        # Add extra points to the diagram
-        # self.points_to_plot = self.RightHandRuleOrder(self.points_to_plot)
-
-        # Apply Quadtree
-        # self.Quadtree()
+        # Add points to the bounding box
+        self.treat_extra_points = treat_extra_points.BoundaryPoints()
+        self.points_to_plot_extra = np.concatenate((self.points_to_plot, self.treat_extra_points.new_points, self.treat_extra_points.interpolated_points), axis=0)
 
         # Create voronoi diagram to plot
-        self.vor = Voronoi(self.points_to_plot)
+        self.vor = Voronoi(self.points_to_plot_extra)
+
+        # Extra points
+        self.lon_point1 = self.treat_extra_points.new_points[:, 1]
+        self.lat_point1 = self.treat_extra_points.new_points[:, 0]
+        self.extra_points1 = np.array([self.lon_point1, self.lat_point1]).T
+
+        self.lon_point2 = self.treat_extra_points.interpolated_points[:, 1]
+        self.lat_point2 = self.treat_extra_points.interpolated_points[:, 0]
+        self.extra_points2 = np.array([self.lon_point2, self.lat_point2]).T
 
         # Real points and real voronoi diagram
         self.real_points = np.array([self.equipment_lat, self.equipment_lon]).T
         self.real_points = np.concatenate((self.real_points, self.real_bounding_box_points), axis=0)
-
-        # Add extra points to the real diagram
-        # self.real_points = self.AddExtraPoints(self.real_points)
+        self.real_points = np.concatenate((self.real_points, self.extra_points1, self.extra_points2), axis=0)
 
         self.real_vor = Voronoi(self.real_points)
 
@@ -115,36 +121,6 @@ class VoronoiDiagram:
 
         # Initial point
         self.initial_point = np.array([self.initial_point_lat, self.initial_point_lon])
-    
-    # def Quadtree(self):
-
-    #     # Filter data so as not to add the initial point
-    #     df_quadtree = self.df.drop(self.df[(self.df["Model Name"] == "rover_argo_NZero::imu_link")].index)
-
-    #     # Points
-    #     self.points_to_use_quadtree = np.array([df_quadtree["Longitude"], df_quadtree["Latitude"]]).T
-
-    #     # Min and max latitude and longitude
-    #     min_lat = self.points_to_use_quadtree[:, 1].min()
-    #     max_lat = self.points_to_use_quadtree[:, 1].max()
-    #     min_lon = self.points_to_use_quadtree[:, 0].min()
-    #     max_lon = self.points_to_use_quadtree[:, 0].max()
-
-    #     boundary = (min_lon, min_lat, max_lon, max_lat) 
-    #     capacity = 5
-
-    #     # Apply Quadtree to the points 
-    #     self.quadtree = quadtree.Quadtree(boundary, capacity)
-
-    #     for point in self.points_to_use_quadtree:
-    #         self.quadtree.insert(point)
-
-    #     # Plota a quadtree
-    #     fig, ax = plt.subplots()
-    #     self.quadtree.plot(ax)
-    #     ax.scatter(self.points_to_use_quadtree[:, 0], self.points_to_use_quadtree[:, 1], color='red')
-    #     ax.set_aspect('equal')
-    #     plt.show()
 
     def PlotVoronoiDiagram(self):
         """
@@ -156,51 +132,3 @@ class VoronoiDiagram:
         plt.ylabel("Latitude")
         plt.title("Voronoi Diagram")
         # plt.show()
-
-    def GenerateExtraPoints(self, points, expansion_factor=0.01):
-        """
-        Generate extra points around the convex hull of the given points.
-
-        Args:
-            points (np.array): Array of points.
-            expansion_factor (float): Factor to expand the convex hull.
-        Returns:
-            np.array: Extra points.
-        """
-        # Calculate the convex hull of the points
-        hull = ConvexHull(points)
-        hull_points = points[hull.vertices]
-
-        # Calculate the centroid of the hull points
-        centroid = np.mean(hull_points, axis=0)
-
-        # Generate extra points by expanding the hull points away from the centroid
-        extra_points = centroid + (hull_points - centroid) * (1 + expansion_factor)
-
-        return extra_points
-
-
-    # def AddExtraPoints(self, points, spread=0.0001, num_extra=100):
-    #     """
-    #     Add extra points to the diagram.
-        
-    #     Args:
-    #         points (np.array): Array of points.
-    #         spread (float): Spread of the extra points.
-    #         num_extra (int): Number of extra points.
-    #     Returns:
-    #         np.array: Array of points with extra points.
-    #     """
-        
-    #     hull = ConvexHull(points)
-    #     hull_points = points[hull.vertices]
-        
-    #     extra_points = []
-    #     for point in hull_points:
-    #         for _ in range(num_extra // len(hull_points)): # Distribute the extra points evenly among the hull points
-    #             offset = np.random.uniform(-spread, spread, size=2) # Deslocamento aleatóri na horizontal e vertical
-    #             extra_points.append(point + offset)
-        
-    #     extra_points = np.array(extra_points)
-        
-    #     return np.vstack([points, extra_points])
