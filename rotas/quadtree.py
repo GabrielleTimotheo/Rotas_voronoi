@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 import pandas as pd
+import voronoi
 
 ####################################################################################################
 # QUADTREE IMPLEMENTATION
@@ -127,7 +128,7 @@ class Quadtree:
         return list(vertices)  
     
 ####################################################################################################
-# FUNCTIONS TO LOAD DATA AND FILTER DATAFRAME
+# FUNCTIONS TO LOAD DATA AND FILTER DATAFRAME AND PLOT
 ####################################################################################################
   
 def LoadFileToDataframe(file_path="models.xlsx"):
@@ -139,9 +140,6 @@ def LoadFileToDataframe(file_path="models.xlsx"):
     Returns:
         pd.DataFrame: Dataframe
     """
-
-    # Clean selected points file
-    open("selected_points.txt", "w").close()
 
     try:
         df = pd.read_excel(file_path)
@@ -165,42 +163,21 @@ def FilterDataframe(df):
     equipment_lat = df_filtered["Latitude"]
     equipment_lon = df_filtered["Longitude"]
 
-    return equipment_lon, equipment_lat
-
-def OnClick(event):
-    """
-    Function to be called when a point is clicked.
-    
-    Args:
-        event (matplotlib.backend_bases.MouseEvent): Event object.
-    """
-    selected_points = []
-    if event.xdata is None or event.ydata is None:
-        return
-    
-    click_point = np.array([event.xdata, event.ydata])
-    distances = np.linalg.norm(vertices - click_point, axis=1)
-    nearest_vertex = vertices[np.argmin(distances)]
-    
-    selected_points.append(nearest_vertex)
-    ax.scatter(nearest_vertex[0], nearest_vertex[1], color='blue', marker='x')
-    plt.draw()
-    
-    with open("selected_points.txt", "a") as f:
-        f.write(f"{nearest_vertex[0]}, {nearest_vertex[1]}\n")
-
-####################################################################################################
-# MAIN FUNCTION
-####################################################################################################
-
-if __name__ == "__main__":
-
-    # Load file to dataframe and filter it
-    df = LoadFileToDataframe()
-    equipment_lon, equipment_lat = FilterDataframe(df)
-
-    # Adjust information to plot
     points_to_use_quadtree = np.array([equipment_lon, equipment_lat]).T
+
+    return points_to_use_quadtree
+
+def LoadBoundaryPoints(points_to_use_quadtree):
+    """
+    Load boundary points for quadtree.
+
+    Args:
+        points_to_use_quadtree (np.array): Points to use in the quadtree.
+    
+    Returns:
+        tuple: Boundary and points to use in the quadtree
+    """
+
     # Min and max latitude and longitude
     min_lat = points_to_use_quadtree[:, 1].min()
     max_lat = points_to_use_quadtree[:, 1].max()
@@ -210,20 +187,50 @@ if __name__ == "__main__":
     # Create quadtree
     boundary = (min_lon, min_lat, max_lon, max_lat) # Area boundary
 
-    quadtree = Quadtree(boundary)
+    return boundary
+
+def PlotQuadtree(ax, bound, points, color='b', edge=True, capacity=4):
+    """
+    Plot quadtree.
+    
+    Args:
+        boundary (tuple): Boundary
+        points_to_use_quadtree (np.array): Points to use in the quadtree.
+    
+    Returns:
+        None"""
+        
+    # Create quadtree
+    quad = Quadtree(bound, capacity=capacity)
 
     for point in points_to_use_quadtree:
-        quadtree.Insert(point)
+        quad.Insert(point)
 
-    # Plot
-    fig, ax = plt.subplots()
-    quadtree.Plot(ax)
-    ax.scatter(points_to_use_quadtree[:, 0], points_to_use_quadtree[:, 1], color='red')
+    if edge:
+        quad.Plot(ax)
+
+    ax.scatter(points[:, 0], points[:, 1], color=color,s=6)
     ax.set_aspect('equal')
 
-    # Interactive point selection
-    vertices = np.array(quadtree.GetVertices())
+####################################################################################################
+# MAIN FUNCTION
+####################################################################################################
 
-    fig.canvas.mpl_connect('button_press_event', OnClick)
-    plt.show()
+if __name__ == "__main__":
+
+    # Load equipment points and Voronoi vertices
+    df = LoadFileToDataframe()
+    voronoi_diagram = voronoi.VoronoiDiagram()
+    vertices = voronoi_diagram.PlotVoronoiDiagram(return_ver=True)
+    points_to_use_quadtree = FilterDataframe(df)
     
+    fig, ax = plt.subplots()
+
+    # Plot quadtree
+    boundary_eq = LoadBoundaryPoints(points_to_use_quadtree)
+    PlotQuadtree(ax, boundary_eq, points_to_use_quadtree,edge=False)
+
+    boundary_ver = LoadBoundaryPoints(vertices)
+    PlotQuadtree(ax, boundary_ver, vertices, color='orange', capacity=10)
+
+    plt.show()

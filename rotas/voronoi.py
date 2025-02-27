@@ -122,7 +122,7 @@ class VoronoiDiagram:
         # Initial point
         self.initial_point = np.array([self.initial_point_lat, self.initial_point_lon])
 
-    def PlotVoronoiDiagram(self):
+    def PlotVoronoiDiagram(self, return_ver=False):
         """
         Plot voronoi diagram.
         """
@@ -132,3 +132,16 @@ class VoronoiDiagram:
         plt.ylabel("Latitude")
         plt.title("Voronoi Diagram")
         # plt.show()
+
+        if return_ver:
+            return self.FilterVerticesInBounds(ax)
+
+    def FilterVerticesInBounds(self, ax):
+        """Get bounds from plot to limit the vertices range in the Voronoi Diagram."""
+
+        x_min, x_max = ax.get_xlim()
+        y_min, y_max = ax.get_ylim()
+        bounds = (x_min, x_max, y_min, y_max)
+
+        x_min, x_max, y_min, y_max = bounds
+        return np.array([v for v in self.vor.vertices  if x_min <= v[0] <= x_max and y_min <= v[1] <= y_max])

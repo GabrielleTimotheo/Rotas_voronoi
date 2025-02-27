@@ -82,6 +82,45 @@ def upload_mission(the_connection, mission_items, retries=3):
             if i < n - 1:
                 ack(the_connection, "MISSION_REQUEST")
 
+# def upload_mission(the_connection, mission_items, retries=3):
+#     """
+#     Upload mission to the drone
+    
+#     Args:
+#         the_connection (mavutil.mavlink_connection): Connection to the drone
+#         mission_items (list): List of mission items
+#         retries (int): Number of retries
+#     """
+
+#     n = len(mission_items)
+
+#     for attempt in range(retries):
+#         print(f"Sending mission attempt {attempt + 1}")
+
+#         # Send the total number of waypoints
+#         the_connection.mav.mission_count_send(the_connection.target_system, the_connection.target_component, n, 0)
+    
+#         # Send all waypoints at once
+#         for waypoint in mission_items:
+#             print(f"Creating waypoint {waypoint.seq}: ({waypoint.param5}, {waypoint.param6}, {waypoint.param7})")
+#             the_connection.mav.mission_item_send(the_connection.target_system, 
+#                                                  the_connection.target_component, 
+#                                                  waypoint.seq, 
+#                                                  waypoint.frame, 
+#                                                  waypoint.command, 
+#                                                  waypoint.current, 
+#                                                  waypoint.auto, 
+#                                                  waypoint.param1, 
+#                                                  waypoint.param2, 
+#                                                  waypoint.param3, 
+#                                                  waypoint.param4, 
+#                                                  waypoint.param5, 
+#                                                  waypoint.param6, 
+#                                                  waypoint.param7, 
+#                                                  waypoint.mission_type)
+
+#         ack(the_connection, "MISSION_ACK")
+
 def start_mission(the_connection, retries=2):
     """
     Start mission

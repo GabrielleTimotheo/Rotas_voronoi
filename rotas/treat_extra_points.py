@@ -21,7 +21,7 @@ class BoundaryPoints:
             np.ndarray: Array of selected points.
         """
         try:
-            points = np.loadtxt("selected_points.txt", delimiter=",", dtype=float)
+            points = np.loadtxt("edge_stitches.txt", delimiter=",", dtype=float)
             points = np.array(points)
             return points
         except Exception as e:
