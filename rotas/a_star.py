@@ -46,18 +46,6 @@ class AStarGraph:
         """
         if event.xdata is not None and event.ydata is not None:
             clicked_point = (event.xdata, event.ydata)
-            self.selected_points.append(clicked_point)
-            print(f"Coordenada selecionada: {clicked_point}")
-
-    def on_click(self, event):
-        """
-        Capture the click and store the coordinate of the clicked point.
-
-        Args:
-            event (event): Event
-        """
-        if event.xdata is not None and event.ydata is not None:
-            clicked_point = (event.xdata, event.ydata)
             
             # Calculate the Euclidean distance between the clicked point and all equipment points
             distances = np.sqrt((self.equipment_lon - clicked_point[0])**2 + (self.equipment_lat - clicked_point[1])**2)
