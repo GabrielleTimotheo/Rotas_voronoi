@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import voronoi
 import pandas as pd
 import re
+import pandas as pd
+import matplotlib.pyplot as plt
+import ast
+import matplotlib.patches as patches
+import numpy as np
+import json
 
 def LoadFileToDataframe(file_path = "models.xlsx"):
     """
@@ -21,8 +27,18 @@ def LoadFileToDataframe(file_path = "models.xlsx"):
         print(f"Could not load the file: {e}")
         return None
     
-# Função para calcular os vetores x e y a partir do ponto médio
 def calcular_vetores(lat, lon, ponto_medio):
+    """
+    Calculate the vectors x and y from the midpoint.
+
+    Args:
+        lat (float): Latitude of the point
+        lon (float): Longitude of the point
+        ponto_medio (tuple): Midpoint coordinates (lat, lon)
+    
+    Returns:
+        tuple: Vectors x and y
+    """
     vetores_x = []
     vetores_y = []
     
@@ -32,9 +48,18 @@ def calcular_vetores(lat, lon, ponto_medio):
         
     return vetores_x, vetores_y
 
-def PlotEquipamentCoordinates(vetores_x, vetores_y):
+def PlotEquipamentCoordinates(vetores_x, vetores_y, equipment_lat, equipment_lon):
     """
     Plot equipament coordinates and collect points to the mission.
+
+    Args:
+        vetores_x (list): List of x coordinates
+        vetores_y (list): List of y coordinates
+        equipment_lat (list): List of equipment latitudes
+        equipment_lon (list): List of equipment longitudes
+    
+    Returns:
+        None
     """
     fig, ax = plt.subplots()
     ax.scatter(equipment_lon, equipment_lat, picker=True, label='Equipment')
@@ -44,7 +69,96 @@ def PlotEquipamentCoordinates(vetores_x, vetores_y):
     ax.set_ylabel("Latitude")
     plt.show()
 
+def PlotEquipamentDimensions(dx, dy, lat_lon_central):
+    """
+    Plot equipment coordinates as rectangles with given dimensions (dx and dy in meters),
+    centered at (equipment_lat, equipment_lon).
+
+    Args:
+        dx (float): Width of the rectangle in meters
+        dy (float): Height of the rectangle in meters
+        equipment_lat (list): List of equipment latitudes
+        equipment_lon (list): List of equipment longitudes
+    
+    Returns:
+        None
+    """
+    fig, ax = plt.subplots()
+
+    # Converte metros para graus de latitude e longitude
+    # 1 grau de latitude = ~111.32 km
+    # 1 grau de longitude depende da latitude
+
+    # lat_lon_central = np.array(lat_lon_central)
+    # lat_lon_central TÁ COMO STRING, MUDAR AQUI
+
+    # Plotar os retângulos
+    for latlon, w, h in zip(lat_lon_central, dx, dy):
+
+        if all(isinstance(i, float) for i in latlon) and len(latlon) != 0:
+            x = latlon[0]
+            y = latlon[1]
+
+            w = w / 111320  # Aproximação
+            h = h / (40075000 * np.cos(np.radians(x)) / 360)
+
+            ax.scatter(x, y, color='blue')
+            rect = patches.Rectangle((x - w/2, y - h/2), w, h,
+                                    linewidth=1, edgecolor='red', facecolor='none')
+            ax.add_patch(rect)
+
+        elif all(isinstance(i, list) for i in latlon) and len(latlon) != 0:
+            for latlons in latlon:
+                x = latlons[0]
+                y = latlons[1]
+                w1 = w / 111320  # Aproximação
+                h1 = h / (40075000 * np.cos(np.radians(x)) / 360)
+
+                ax.scatter(x, y, color='blue')
+                rect = patches.Rectangle((x - w1/2, y - h1/2), w1, h1,
+                                        linewidth=1, edgecolor='red', facecolor='none')
+                ax.add_patch(rect)
+        else:
+            continue
+
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_title("Equipments in Geo Coordinates")
+    ax.legend(["Equipment Center"])
+    ax.grid(True)
+    plt.axis('equal')
+    plt.show()
+
+def safe_json_load(val):
+    """
+    Safely load a JSON string into a Python object.
+    
+    Args:
+        val (str): JSON string
+    
+    Returns:
+        dict or None: Loaded JSON object or None if the string is not valid JSON
+    """
+    if isinstance(val, str):
+        return json.loads(val)
+    if pd.isna(val):
+        return []
+    return val 
+
 def CartesianToGeodesic(x, y, lat0, lon0):
+    """
+    Convert Cartesian coordinates (x, y) to geodesic coordinates (latitude, longitude)
+    using the WGS84 ellipsoid model.
+    
+    Args:
+        x (float): X coordinate in meters
+        y (float): Y coordinate in meters
+        lat0 (float): Initial latitude in degrees
+        lon0 (float): Initial longitude in degrees
+
+    Returns:
+        tuple: Latitude and longitude in degrees
+    """
 
     # Criar o objeto Geodesic com o modelo WGS84
     geod = Geodesic.WGS84
@@ -61,6 +175,22 @@ def CartesianToGeodesic(x, y, lat0, lon0):
     lon = result['lon2']
 
     return lat, lon
+
+def extrair_lat_lon_principal(grupos):
+
+    if not isinstance(grupos, list):
+        print("Não é lista:", grupos)
+        return []
+
+    elif len(grupos) == 2:
+        resultado = grupos[0]
+    else:
+        resultado = []
+        for subgrupo in grupos:
+            resultado.append(subgrupo[0])
+    
+    return resultado
+    
     
 df = LoadFileToDataframe()
 equipment_lat = df['Latitude']
@@ -69,18 +199,19 @@ model_name = df['Model Name']
 
 
 # Equipamentos
-vertice_REATOR = (1.534546, 3.054527) #(3.054527, 1.534546)
-vertice_PR = (0.6871033, 0.6181564) #(0.6181564, 0.6871033)
-vertice_TPC = (0.864502, 0.7777786) #(0.7777786, 0.864502)
-vertice_IP = (0.7239075, 0.5235214) #(0.5235214, 0.7239075)
-vertice_SECH = (3.303741, 0.5302429) #(0.5302429, 3.303741)
-vertice_TC = (0.8567124, 0.7042313) #(0.7042313, 0.8567124)
-vertice_SECV = (1.088993, 0.54982) #(0.54982, 1.088993)
-vertice_DISJUNTOR = (2.458675, 0.7382889) #(0.7382889, 2.458675)
-vertice_BUSCSB = (0.7805481, 0.54982) #(0.54982, 0.7805481)
-vertice_BUSIP = (0.7805519, 0.54982) #(0.54982, 0.7805519)
-vertice_ESTRUTURA2 = (1.3, 2.74, -1.3, -2.74)
-vertice_ESTRUTURA3 = (1.3, 2.74, -1.3, -2.74)
+# Metade da largura e altura
+vertice_REATOR = (1.534546, 3.054527) 
+vertice_PR = (0.6871033, 0.6181564) 
+vertice_TPC = (0.864502, 0.7777786) 
+vertice_IP = (0.7239075, 0.5235214) 
+vertice_SECH = (3.303741, 0.5302429) 
+vertice_TC = (0.8567124, 0.7042313) 
+vertice_SECV = (1.088993, 0.54982) 
+vertice_DISJUNTOR = (2.458675, 0.7382889) 
+vertice_BUSCSB = (0.7805481, 0.54982) 
+vertice_BUSIP = (0.7805519, 0.54982) 
+vertice_ESTRUTURA2 = (2.74, 1.3, -2.74, -1.3)
+vertice_ESTRUTURA3 = (2.74, 1.3, -2.74, -1.3)
 
 vertices = [vertice_REATOR, vertice_PR, vertice_TPC, vertice_IP, vertice_SECH, vertice_TC, vertice_SECV, vertice_DISJUNTOR, vertice_BUSCSB, vertice_BUSIP, vertice_ESTRUTURA2, vertice_ESTRUTURA3] 
 name = ["REATOR", "PR", "TPC", "IP", "SECH", "TC", "SECV", "DISJUNTOR", "BUSCSB", "BUSIP", "ESTRUTURA2", "ESTRUTURA3"]
@@ -95,6 +226,7 @@ for k in range(len(vertices)):
             if "ESTRUTURA2" in model_name[i] or "ESTRUTURA3" in model_name[i]:
                 vx = []
                 vy = []
+                ponto_medio_total = []
 
                 if "ESTRUTURA2" in model_name[i]:
                     coord = [14.2, 0, -14.2, 0]
@@ -115,6 +247,8 @@ for k in range(len(vertices)):
                     # Calcular os vetores
                     vetores_x, vetores_y = calcular_vetores(lat, lon, ponto_medio)
 
+                    ponto_medio_total.append([ponto_medio[1], ponto_medio[0]])
+
                     vx.append(vetores_x)
                     vy.append(vetores_y)
 
@@ -131,12 +265,14 @@ for k in range(len(vertices)):
                 
                 # Novo ponto médio para cima
                 lat1, lon1 = CartesianToGeodesic(x, y, lat0, lon0)
+                ponto_medio_total.append([lon1, lat1])
 
                 x = coord[2]   # deslocamento no eixo X (longitude)
                 y = coord[3] # deslocamento no eixo Y (latitude)
                 
                 # Novo ponto médio para baixo
                 lat2, lon2 = CartesianToGeodesic(x, y, lat0, lon0)
+                ponto_medio_total.append([lon2, lat2])
                 #--------------------------------------------------------------------
 
                 # Ponto médio em cima
@@ -165,11 +301,14 @@ for k in range(len(vertices)):
                 vx.append(vetores_x)
                 vy.append(vetores_y)
 
-                # PlotEquipamentCoordinates(vetores_x, vetores_y)
-
                 # Adicionar os vetores ao dataframe
-                df.loc[i, 'Vx'] = str(vx)
-                df.loc[i, 'Vy'] = str(vy)
+                df.loc[i, 'LatLonCentral'] = json.dumps(ponto_medio_total)
+
+                df.loc[i, 'Vx'] = json.dumps(vx)
+                df.loc[i, 'Vy'] = json.dumps(vy)
+
+                df.loc[i, 'LarguraMetros'] = vertice[0]*2
+                df.loc[i, 'ComprimentoMetros'] = vertice[1]*2
 
                 # Salvar as mudanças no arquivo
                 df.to_excel("models_updated.xlsx", index=False)
@@ -191,19 +330,29 @@ for k in range(len(vertices)):
                 # Calcular os vetores
                 vetores_x, vetores_y = calcular_vetores(lat, lon, ponto_medio)
 
-                # Exibir os vetores calculados
-                print("Vetores X:", vetores_x)
-                print("Vetores Y:", vetores_y)
-
-                distancia_x = Geodesic.WGS84.Inverse(ponto_medio[0],ponto_medio[1],ponto_medio[0],lon)['s12']
-                distancia_y = Geodesic.WGS84.Inverse(ponto_medio[0],ponto_medio[1],lat,ponto_medio[1])['s12']
-
                 # Adicionar os vetores ao dataframe
-                df.loc[i, 'Vx'] = str(vetores_x)
-                df.loc[i, 'Vy'] = str(vetores_y)
+                df.loc[i, 'LatLonCentral'] = json.dumps([ponto_medio[1], ponto_medio[0]])
+
+                df.loc[i, 'Vx'] = json.dumps(vetores_x)
+                df.loc[i, 'Vy'] = json.dumps(vetores_y)
+
+                df.loc[i, 'LarguraMetros'] = x*2
+                df.loc[i, 'ComprimentoMetros'] = y*2
 
                 # Salvar as mudanças no arquivo
                 df.to_excel("models_updated.xlsx", index=False)
                 print("Arquivo atualizado salvo como 'models_updated.xlsx'")
 
-                # PlotEquipamentCoordinates(vetores_x, vetores_y)
+
+df['LarguraMetros'] = df['LarguraMetros'].apply(safe_json_load)
+df['ComprimentoMetros'] = df['ComprimentoMetros'].apply(safe_json_load)
+dx = df['LarguraMetros']
+dy = df['ComprimentoMetros']
+
+df['Vx'] = df['Vx'].apply(safe_json_load)
+df['Vy'] = df['Vy'].apply(safe_json_load)
+# df['lat_lon_principal'] = df['Vx'].apply(extrair_lat_lon_principal)
+lat_lon_central = df['LatLonCentral'].apply(safe_json_load)
+# lat_lon_central = df['lat_lon_principal']
+
+PlotEquipamentDimensions(dx, dy, lat_lon_central)# Arrumar aqui dentro
