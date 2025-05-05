@@ -36,10 +36,22 @@ class TreatData:
         vertice_ESTRUTURA3 = (2.74, 1.3, -2.74, -1.3)
         vertice_canaletas_horizontal = (11, 2) # Não é metade, horizontal
 
+        # self.vertices_canaletas = {
+        #     "canaleta1": (11, 2, -0.459704, -123.217343),
+        #     "canaleta2": (2, 23.6, -13.222777, -118.792624),
+        #     "canaleta3": (2, 16.62, 8.387840, -118.721732),
+        #     "canaleta4": (101, 2, -87.351506, -19.399625)}
+
+        # Mudar sinal do x ao inserir
         self.vertices_canaletas = {
             "canaleta1": (11, 2, -0.459704, -123.217343),
             "canaleta2": (2, 23.6, -13.222777, -118.792624),
-            "canaleta3": (2, 16.62, 8.387840, -118.721732)}
+            "canaleta3": (2, 16.62, 8.387840, -118.721732),
+            "canaleta4": (101, 2, 18, -68.997061),
+            "canaleta5": (2, 83, 58.553385, -98.998900),
+            "canaleta6": (101, 2, -87.351506, -19.399625),
+            "canaleta7": (2, 123, -24.635673, -21),
+            }
 
         # Latitude e longitude central de cada canaleta
         # Horizontal
@@ -189,7 +201,7 @@ class TreatData:
         geod = Geodesic.WGS84
 
         # Calcular o azimute e a distância a partir dos deslocamentos cartesianos
-        azimuth = math.atan2(y, x) * 180 / math.pi  # Converte o ângulo para graus
+        azimuth = math.atan2(y, -x) * 180 / math.pi  # Converte o ângulo para graus
         distance = math.sqrt(x**2 + y**2)  # Distância no plano XY
 
         # Usar o método Direct para calcular a nova latitude e longitude
@@ -226,7 +238,7 @@ class TreatData:
         return resultado
 
     def processar_canaleta(self, i):
-        i = 0 
+        
         for canaleta, vertice in self.vertices_canaletas.items():
             ponto_medio = (vertice[2], vertice[3])
             x, y = vertice[0], vertice[1]
