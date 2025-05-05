@@ -60,7 +60,7 @@ class TreatData:
         self.vertices = [vertice_REATOR, vertice_PR, vertice_TPC, vertice_IP, vertice_SECH, vertice_TC, vertice_SECV, vertice_DISJUNTOR, vertice_BUSCSB, vertice_BUSIP, vertice_ESTRUTURA2, vertice_ESTRUTURA3, vertice_canaletas_horizontal] 
         self.name = ["REATOR", "PR", "TPC", "IP", "SECH", "TC", "SECV", "DISJUNTOR", "BUSCSB", "BUSIP", "ESTRUTURA2", "ESTRUTURA3", "canaletas"]
 
-    def LoadFileToDataframe(self, file_path = "models.xlsx"):
+    def LoadFileToDataframe(self, file_path = "models2.xlsx"):
         """
         Load file to pandas dataframe.
 
@@ -95,27 +95,6 @@ class TreatData:
         vetores_y = [(ponto_medio[1], ponto_medio[0]), (ponto_medio[1],lat)]
             
         return vetores_x, vetores_y
-
-    def PlotEquipamentCoordinates(self, vetores_x, vetores_y, equipment_lat, equipment_lon):
-        """
-        Plot equipament coordinates and collect points to the mission.
-
-        Args:
-            vetores_x (list): List of x coordinates
-            vetores_y (list): List of y coordinates
-            equipment_lat (list): List of equipment latitudes
-            equipment_lon (list): List of equipment longitudes
-        
-        Returns:
-            None
-        """
-        fig, ax = plt.subplots()
-        ax.scatter(equipment_lon, equipment_lat, picker=True, label='Equipment')
-        ax.scatter(vetores_x[1][0], vetores_x[1][1], picker=True, color='red', label='Robot Position')
-        ax.scatter(vetores_y[1][0], vetores_y[1][1], picker=True, color='red', label='Robot Position')
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        plt.show()
 
     def PlotEquipamentDimensions(self, dx, dy, lat_lon_central):
         """
@@ -152,6 +131,7 @@ class TreatData:
                                         linewidth=1, edgecolor='red', facecolor='none')
                 ax.add_patch(rect)
 
+            # Para o caso das estruturas
             elif all(isinstance(i, list) for i in latlon) and len(latlon) != 0:
                 for latlons in latlon:
                     x = latlons[0]
@@ -245,17 +225,21 @@ class TreatData:
         
         return resultado
 
-    # def processar_canaleta(self, i, vertices_canaletas):
-        
-    #     x, y = vertice
-    #     lat, lon = self.CartesianToGeodesic(x, y, canaleta1[0], canaleta1[1])
-    #     vetores_x, vetores_y = self.calcular_vetores(lat, lon, canaleta1)
+    def processar_canaleta(self, i):
+        i = 0 
+        for canaleta, vertice in self.vertices_canaletas.items():
+            ponto_medio = (vertice[2], vertice[3])
+            x, y = vertice[0], vertice[1]
+            lat, lon = self.CartesianToGeodesic(x, y, vertice[0], vertice[1])
+            vetores_x, vetores_y = self.calcular_vetores(lat, lon, ponto_medio)
 
-    #     self.df.loc[i, 'LatLonCentral'] = json.dumps([canaleta1[1], canaleta1[0]])
-    #     self.df.loc[i, 'Vx'] = json.dumps(vetores_x)
-    #     self.df.loc[i, 'Vy'] = json.dumps(vetores_y)
-    #     self.df.loc[i, 'LarguraMetros'] = x 
-    #     self.df.loc[i, 'ComprimentoMetros'] = y 
+            i = i + 1
+            self.df.loc[i, 'Model Name'] = f'ARGO_PARNAIBAIII_V2_LD::BASE::{canaleta}'
+            self.df.loc[i, 'LatLonCentral'] = json.dumps([ponto_medio[1], ponto_medio[0]])
+            self.df.loc[i, 'Vx'] = json.dumps(vetores_x)
+            self.df.loc[i, 'Vy'] = json.dumps(vetores_y)
+            self.df.loc[i, 'LarguraMetros'] = x 
+            self.df.loc[i, 'ComprimentoMetros'] = y 
 
     def processar_outros(self, i, vertice):
         ponto_medio = (self.equipment_lat[i], self.equipment_lon[i])
@@ -366,9 +350,8 @@ class TreatData:
                         self.df.to_excel("models_updated.xlsx", index=False)
 
                     elif "canaletas" in self.model_name[i]:
-                        pass
-                        # processar_canaleta(i, vertices_canaletas)
-                        # df.to_excel("models_updated.xlsx", index=False)
+                        self.processar_canaleta(i)
+                        self.df.to_excel("models_updated.xlsx", index=False)
                     else:
 
                         self.processar_outros(i, vertice)
