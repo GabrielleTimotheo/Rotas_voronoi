@@ -9,7 +9,9 @@ import numpy as np
 import json
 
 class TreatData:
-    """ Treat data about equipment dimensions and coordinates.
+    """ Treat data about equipment dimensions and coordinates from a spreadsheet.
+
+    Obs: we use as standard the longitude as x and the latitude as y.
     """
 
     def __init__(self):
@@ -20,59 +22,51 @@ class TreatData:
         self.equipment_lon = self.df['Longitude']
         self.model_name = self.df['Model Name']
 
-        # Equipamentos
-        # Metade da largura e altura [metros]
-        vertice_REATOR = (1.534546, 3.054527) 
-        vertice_PR = (0.6871033, 0.6181564) 
-        vertice_TPC = (0.864502, 0.7777786) 
-        vertice_IP = (0.7239075, 0.5235214) 
-        vertice_SECH = (3.303741, 0.5302429) 
-        vertice_TC = (0.8567124, 0.7042313) 
-        vertice_SECV = (1.088993, 0.54982) 
-        vertice_DISJUNTOR = (2.458675, 0.7382889) 
-        vertice_BUSCSB = (0.7805481, 0.54982) 
-        vertice_BUSIP = (0.7805519, 0.54982) 
-        vertice_ESTRUTURA2 = (2.74, 1.3, -2.74, -1.3)
-        vertice_ESTRUTURA3 = (2.74, 1.3, -2.74, -1.3)
-        vertice_canaletas_horizontal = (11, 2) # Não é metade, horizontal
+        # Equipment dimensions, half of width and height in meters
+        # Data from gazebo dae file
+        dimension_REATOR = (1.534546, 3.054527) 
+        dimension_PR = (0.6871033, 0.6181564) 
+        dimension_TPC = (0.864502, 0.7777786) 
+        dimension_IP = (0.7239075, 0.5235214) 
+        dimension_SECH = (3.303741, 0.5302429) 
+        dimension_TC = (0.8567124, 0.7042313) 
+        dimension_SECV = (1.088993, 0.54982) 
+        dimension_DISJUNTOR = (2.458675, 0.7382889) 
+        dimension_BUSCSB = (0.7805481, 0.54982) 
+        dimension_BUSIP = (0.7805519, 0.54982) 
+        dimension_ESTRUTURA2 = (2.74, 1.3, -2.74, -1.3)
+        dimension_ESTRUTURA3 = (2.74, 1.3, -2.74, -1.3)
+        dimension_canaletas_horizontal = (11, 2) # Não é usado, só tá por causa da estrutura do for principal
 
-        # self.vertices_canaletas = {
-        #     "canaleta1": (11, 2, -0.459704, -123.217343),
-        #     "canaleta2": (2, 23.6, -13.222777, -118.792624),
-        #     "canaleta3": (2, 16.62, 8.387840, -118.721732),
-        #     "canaleta4": (101, 2, -87.351506, -19.399625)}
-
-        # Mudar sinal do x ao inserir
-        self.vertices_canaletas = {
+        # width, height and x, y from gazebo global frame
+        self.dimension_canaletas_taludes = {
             "canaleta1": (11, 2, -0.459704, -123.217343),
             "canaleta2": (2, 23.6, -13.222777, -118.792624),
             "canaleta3": (2, 16.62, 8.387840, -118.721732),
-            "canaleta4": (101, 2, 18, -68.997061),
+            "canaleta4": (101, 2, 17, -68.997061),
             "canaleta5": (2, 83, 58.553385, -98.998900),
             "canaleta6": (101, 2, -87.351506, -19.399625),
             "canaleta7": (2, 123, -24.635673, -21),
+            "canaleta8": (202, 2, 38.059014, 27),
+            "talude1": (2, 50, -95, -74.099800),
+            "talude2": (180, 2, -72, 15), 
+            "talude3": (250, 2, 22.256600, 10),
+            "talude4": (2, 100, -35, 110)
             }
 
-        # Latitude e longitude central de cada canaleta
-        # Horizontal
-        lat0, lon0 = -3.123199, -41.764537 # Base for the transformation
+        # Base for the transformation, cartesian to geodesic
+        lat0, lon0 = -3.123199, -41.764537 
 
-        # canaleta1 = (-0.459704, -123.217343)
-        # canLat1, canLon1 = CartesianToGeodesic(canaleta1[0], canaleta1[1], lat0, lon0)
-        # canaleta1 = (canLat1, canLon1)
-
-        # # Vertical
-        # canaleta1 = (-0.459704, -123.217343)
-
-        for name, canaleta in self.vertices_canaletas.items():
+        # Convert the canaletas and taludes coordinates from cartesian to geodesic
+        for name, canaleta in self.dimension_canaletas_taludes.items():
             novo_lat, novo_lon = self.CartesianToGeodesic(canaleta[2], canaleta[3], lat0, lon0)
-            self.vertices_canaletas[name] = (canaleta[0], canaleta[1], novo_lat, novo_lon)
+            self.dimension_canaletas_taludes[name] = (canaleta[0], canaleta[1], novo_lat, novo_lon)
 
         # Other objects
-        self.vertices = [vertice_REATOR, vertice_PR, vertice_TPC, vertice_IP, vertice_SECH, vertice_TC, vertice_SECV, vertice_DISJUNTOR, vertice_BUSCSB, vertice_BUSIP, vertice_ESTRUTURA2, vertice_ESTRUTURA3, vertice_canaletas_horizontal] 
-        self.name = ["REATOR", "PR", "TPC", "IP", "SECH", "TC", "SECV", "DISJUNTOR", "BUSCSB", "BUSIP", "ESTRUTURA2", "ESTRUTURA3", "canaletas"]
+        self.dimensions = [dimension_REATOR, dimension_PR, dimension_TPC, dimension_IP, dimension_SECH, dimension_TC, dimension_SECV, dimension_DISJUNTOR, dimension_BUSCSB, dimension_BUSIP, dimension_ESTRUTURA2, dimension_ESTRUTURA3, dimension_canaletas_horizontal] 
+        self.equipment_name = ["REATOR", "PR", "TPC", "IP", "SECH", "TC", "SECV", "DISJUNTOR", "BUSCSB", "BUSIP", "ESTRUTURA2", "ESTRUTURA3", "canaletas"]
 
-    def LoadFileToDataframe(self, file_path = "models2.xlsx"):
+    def LoadFileToDataframe(self, file_path = "models.xlsx"):
         """
         Load file to pandas dataframe.
 
@@ -111,50 +105,48 @@ class TreatData:
     def PlotEquipamentDimensions(self, dx, dy, lat_lon_central):
         """
         Plot equipment coordinates as rectangles with given dimensions (dx and dy in meters),
-        centered at (equipment_lat, equipment_lon).
+        centered at (equipment_lon, equipment_lat). Convert meters to degrees of latitude and longitude,
+        1 degree of latitude = ~111.32 km and 1 degree of longitude depends on the latitude
 
         Args:
+            lat_lon_central (list): List of tuples (lon, lat)
             dx (float): Width of the rectangle in meters
             dy (float): Height of the rectangle in meters
-            equipment_lat (list): List of equipment latitudes
-            equipment_lon (list): List of equipment longitudes
         
         Returns:
             None
         """
         fig, ax = plt.subplots()
 
-        # Converte metros para graus de latitude e longitude
-        # 1 grau de latitude = ~111.32 km
-        # 1 grau de longitude depende da latitude
-
-        # Plotar os retângulos
+        # Plot rectangles
         for latlon, w, h in zip(lat_lon_central, dx, dy):
 
             if all(isinstance(i, float) for i in latlon) and len(latlon) != 0:
-                x = latlon[0]
-                y = latlon[1]
+                lon = latlon[0]
+                lat = latlon[1]
 
-                w = w / 111320  # Aproximação
-                h = h / (40075000 * np.cos(np.radians(x)) / 360)
+                w_deg = w / (40075000 * np.cos(np.radians(lat)) / 360)  # longitude
+                h_deg = h / 111320  # latitude
 
-                ax.scatter(x, y, color='blue')
-                rect = patches.Rectangle((x - w/2, y - h/2), w, h,
+                ax.scatter(lon, lat, color='blue')
+                rect = patches.Rectangle((lon - w_deg/2, lat - h_deg/2), w_deg, h_deg,
                                         linewidth=1, edgecolor='red', facecolor='none')
                 ax.add_patch(rect)
 
-            # Para o caso das estruturas
+            # Estruturas case
             elif all(isinstance(i, list) for i in latlon) and len(latlon) != 0:
                 for latlons in latlon:
-                    x = latlons[0]
-                    y = latlons[1]
-                    w1 = w / 111320  # Aproximação
-                    h1 = h / (40075000 * np.cos(np.radians(x)) / 360)
+                    lon = latlons[0]
+                    lat = latlons[1]
 
-                    ax.scatter(x, y, color='blue')
-                    rect = patches.Rectangle((x - w1/2, y - h1/2), w1, h1,
+                    w_deg = w / (40075000 * np.cos(np.radians(lat)) / 360)
+                    h_deg = h / 111320
+
+                    ax.scatter(lon, lat, color='blue')
+                    rect = patches.Rectangle((lon - w_deg/2, lat - h_deg/2), w_deg, h_deg,
                                             linewidth=1, edgecolor='red', facecolor='none')
                     ax.add_patch(rect)
+
             else:
                 continue
 
@@ -197,75 +189,70 @@ class TreatData:
             tuple: Latitude and longitude in degrees
         """
 
-        # Criar o objeto Geodesic com o modelo WGS84
+        # Create the Geodesic object with the WGS84 model
         geod = Geodesic.WGS84
 
-        # Calcular o azimute e a distância a partir dos deslocamentos cartesianos
-        azimuth = math.atan2(y, -x) * 180 / math.pi  # Converte o ângulo para graus
-        distance = math.sqrt(x**2 + y**2)  # Distância no plano XY
+        # Calculate the azimuth and distance from the Cartesian displacements
+        azimuth = math.atan2(y, -x) * 180 / math.pi  # Convert to degrees
+        distance = math.sqrt(x**2 + y**2)  # Distance in meters
 
-        # Usar o método Direct para calcular a nova latitude e longitude
+        # Use the Direct method to calculate the new latitude and longitude
         result = geod.Direct(lat0, lon0, azimuth, distance)
 
-        # Latitude, longitude e altitude calculados
+        # Latitude, longitude
         lat = result['lat2']
         lon = result['lon2']
 
         return lat, lon
 
-    def extrair_lat_lon_principal(self, grupos):
+    def process_canaleta_talude(self, i):
         """
-        Extract the main latitude and longitude from a list of groups.
-        
+        Process the canaleta and talude dimensions and coordinates.
         Args:
-            grupos (list): List of groups containing latitude and longitude
-        
-        Returns:
-            list: List of main latitude and longitude
+            i (int): Index of the equipment
         """
-
-        if not isinstance(grupos, list):
-            print("Não é lista:", grupos)
-            return []
-
-        elif len(grupos) == 2:
-            resultado = grupos[0]
-        else:
-            resultado = []
-            for subgrupo in grupos:
-                resultado.append(subgrupo[0])
         
-        return resultado
-
-    def processar_canaleta(self, i):
-        
-        for canaleta, vertice in self.vertices_canaletas.items():
-            ponto_medio = (vertice[2], vertice[3])
-            x, y = vertice[0], vertice[1]
-            lat, lon = self.CartesianToGeodesic(x, y, vertice[0], vertice[1])
+        for name, data in self.dimension_canaletas_taludes.items():
+            ponto_medio = (data[2], data[3]) # lat, lon
+            dx, dy = data[0], data[1] # central cartesian coordinates
+            lat, lon = self.CartesianToGeodesic(dx, dy, data[0], data[1]) # transformation
             vetores_x, vetores_y = self.calcular_vetores(lat, lon, ponto_medio)
 
             i = i + 1
-            self.df.loc[i, 'Model Name'] = f'ARGO_PARNAIBAIII_V2_LD::BASE::{canaleta}'
+            self.df.loc[i, 'Model Name'] = f'ARGO_PARNAIBAIII_V2_LD::BASE::{name}'
             self.df.loc[i, 'LatLonCentral'] = json.dumps([ponto_medio[1], ponto_medio[0]])
             self.df.loc[i, 'Vx'] = json.dumps(vetores_x)
             self.df.loc[i, 'Vy'] = json.dumps(vetores_y)
-            self.df.loc[i, 'LarguraMetros'] = x 
-            self.df.loc[i, 'ComprimentoMetros'] = y 
+            self.df.loc[i, 'LarguraMetros'] = dx 
+            self.df.loc[i, 'ComprimentoMetros'] = dy
 
-    def processar_outros(self, i, vertice):
+    def process_other_equipment(self, i, dimension):
+        """
+        Process the other equipment dimensions and coordinates.
+        Args:
+            i (int): Index of the equipment
+            dimension (tuple): Equipment dimensions (width, height)
+        """
+
         ponto_medio = (self.equipment_lat[i], self.equipment_lon[i])
-        x, y = vertice
-        lat, lon = self.CartesianToGeodesic(x, y, ponto_medio[0], ponto_medio[1])
+        dx, dy = dimension
+        lat, lon = self.CartesianToGeodesic(dx, dy, ponto_medio[0], ponto_medio[1])
         vetores_x, vetores_y = self.calcular_vetores(lat, lon, ponto_medio)
 
         self.df.loc[i, 'LatLonCentral'] = json.dumps([ponto_medio[1], ponto_medio[0]])
         self.df.loc[i, 'Vx'] = json.dumps(vetores_x)
         self.df.loc[i, 'Vy'] = json.dumps(vetores_y)
-        self.df.loc[i, 'LarguraMetros'] = x * 2
-        self.df.loc[i, 'ComprimentoMetros'] = y * 2
+        self.df.loc[i, 'LarguraMetros'] = dx * 2
+        self.df.loc[i, 'ComprimentoMetros'] = dy * 2
 
-    def processar_estrutura(self, i, vertice):
+    def process_estrutura(self, i, vertice):
+        """
+        Process the structure dimensions and coordinates.
+        Args:
+            i (int): Index of the equipment
+            vertice (tuple): Equipment dimensions (width, height)
+        """
+
         vx, vy, ponto_medio_total = [], [], []
 
         if "ESTRUTURA2" in self.model_name[i]:
@@ -349,24 +336,26 @@ class TreatData:
         self.df.loc[i, 'ComprimentoMetros'] = vertice[1]*2
     
     def main(self):
+        """
+        Main function to process the data and plot the equipment dimensions.
+        """
 
-        for k in range(len(self.vertices)):
-            vertice = self.vertices[k]
+        for k in range(len(self.dimensions)):
+            dimension = self.dimensions[k]
 
             for i in range(self.equipment_lat.size):
                 
-                if self.name[k] in self.model_name[i]:
+                if self.equipment_name[k] in self.model_name[i]:
 
                     if "ESTRUTURA2" in self.model_name[i] or "ESTRUTURA3" in self.model_name[i]:
-                        self.processar_estrutura(i, vertice)
+                        self.process_estrutura(i, dimension)
                         self.df.to_excel("models_updated.xlsx", index=False)
 
                     elif "canaletas" in self.model_name[i]:
-                        self.processar_canaleta(i)
+                        self.process_canaleta_talude(i)
                         self.df.to_excel("models_updated.xlsx", index=False)
                     else:
-
-                        self.processar_outros(i, vertice)
+                        self.process_other_equipment(i, dimension)
                         self.df.to_excel("models_updated.xlsx", index=False)       
 
         self.df['LarguraMetros'] = self.df['LarguraMetros'].apply(self.safe_json_load)
